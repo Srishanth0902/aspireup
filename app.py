@@ -113,9 +113,18 @@ formatted_agent_chain = (
 ).with_types(input_type=AgentInput, output_type=str)
 
 # --- 3. FastAPI App ---
-app = FastAPI(title="india weather and market")
-add_routes(app, formatted_agent_chain, path="/agent")
+app = FastAPI(
+    title="Indian Weather & Cinema Agent",
+    version="1.0",
+    description="A LangServe agent that specializes in Indian weather and cinema."
+)
 
+# Add routes
+add_routes(
+    app,
+    formatted_agent_chain,
+    path="/gemini-agent",
+)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
