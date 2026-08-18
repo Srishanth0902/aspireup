@@ -52,27 +52,22 @@ def get_weather(city: str) -> str:
     result = {
         "resolved_city": location["name"],
         "temperature_celsius": weather_response["temperature_2m"],
-        "weather_code": weather_response["weather_code"] # Fixed bug here
+        "weather_code": weather_response["weather_code"]
     }
     return json.dumps(result)
 
 tools = [get_weather, search_movies, change__to_f]
 
 # --- 2. Initialize Model & Agent ---
-print("DEBUG: Before getting GEMINI_API_KEY from os.environ")
 # Retrieve the key from the OS environment instead of Colab's userdata
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-print(f"DEBUG: GEMINI_API_KEY is set: {GEMINI_API_KEY is not None}")
 
-print("DEBUG: Before initializing llm_flash...")
 llm_flash = ChatGoogleGenerativeAI(
     model="gemma-4-31b-it",
     api_key=GEMINI_API_KEY,
     temperature=0
 )
-print("DEBUG: llm_flash initialized.")
 
-print("DEBUG: Before creating agent...")
 agent = create_agent(
     model=llm_flash,
     tools=tools,
@@ -82,7 +77,6 @@ agent = create_agent(
         "you must say exactly: 'I am not authorized to answer questions outside of Indian weather and cinema.'"
     )
 )
-print("DEBUG: Agent created.")
 
 class AgentInput(BaseModel):
     input: str = Field(description="Your message to the agent")
@@ -112,28 +106,17 @@ def extract_text_response(agent_output: dict) -> str:
 
     return str(agent_output)
 
-print("DEBUG: Before creating formatted_agent_chain...")
 formatted_agent_chain = (
     RunnableLambda(format_for_agent)
     | agent
     | RunnableLambda(extract_text_response)
 ).with_types(input_type=AgentInput, output_type=str)
-print("DEBUG: formatted_agent_chain created.")
 
 # --- 3. FastAPI App ---
-print("DEBUG: About to define FastAPI app object...")
-app = FastAPI(
-    title="LangChain Server",
-    version="1.0",
-    description="A simple API server using LangChain's Runnable interfaces",
-)
-print("DEBUG: FastAPI app object defined.")
-
-print("DEBUG: Before adding routes...")
+app = FastAPI(title="india weather and market")
 add_routes(app, formatted_agent_chain, path="/agent")
-print("DEBUG: Routes added.")
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
-    print(f"DEBUG: Starting uvicorn on port {port}...")
     uvicorn.run(app, host="0.0.0.0", port=port)
